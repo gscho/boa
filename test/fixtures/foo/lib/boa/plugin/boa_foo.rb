@@ -1,9 +1,9 @@
-require "riper/plugin/base"
+require "boa/plugin/base"
 
-module Riper
+module Boa
   module Plugin
-    class RiperFoo < Riper::Plugin::Base
-      Riper::Plugin.register("foo", self)
+    class BoaFoo < Boa::Plugin::Base
+      Boa::Plugin.register("foo", self)
       
       def deserialize(data)
         {

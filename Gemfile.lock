@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    riper (0.1.0)
+    boa-config (0.1.0)
 
 PATH
   remote: test/fixtures/foo
@@ -40,10 +40,10 @@ PLATFORMS
   arm64-darwin-21
 
 DEPENDENCIES
+  boa-config!
   foo!
   minitest (~> 5.0)
   rake (~> 13.0)
-  riper!
   rubocop (~> 1.21)
 
 BUNDLED WITH

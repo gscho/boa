@@ -1,4 +1,4 @@
-module Riper
+module Boa
   module Plugin
     class Base
       def deserialize(data)

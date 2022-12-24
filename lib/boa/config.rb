@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 require "singleton"
 
-module Riper
+module Boa
   class Config
     include Singleton
     attr_reader :config, :config_paths, :name, :type
@@ -45,7 +45,7 @@ module Riper
     end
 
     def parse_config(file)
-      serde = Riper::Plugin.plugin_for_type(@type)
+      serde = Boa::Plugin.plugin_for_type(@type)
       parsed = serde.deserialize(file)
       @config.merge! parsed
     end

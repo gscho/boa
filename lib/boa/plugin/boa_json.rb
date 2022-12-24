@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 require_relative "base"
 
-module Riper
+module Boa
   module Plugin
-    class RiperJSON < Riper::Plugin::Base
-      Riper::Plugin.register("json", self)
+    class BoaJSON < Boa::Plugin::Base
+      Boa::Plugin.register("json", self)
 
       def deserialize(data)
         require "json"

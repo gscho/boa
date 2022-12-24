@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 require_relative "base"
 
-module Riper
+module Boa
   module Plugin
-    class RiperYAML < Riper::Plugin::Base
-      Riper::Plugin.register("yaml", self)
+    class BoaYAML < Boa::Plugin::Base
+      Boa::Plugin.register("yaml", self)
 
       def deserialize(data)
         require "yaml"
