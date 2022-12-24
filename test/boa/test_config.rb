@@ -35,6 +35,8 @@ class TestBoaConfig < Minitest::Test
       }
     }
     assert_equal expected, $boa.config
+    assert_equal "localhost", $boa.get("redis.host")
+    assert_equal 6379, $boa.get("redis.port")
   end
 
   def test_read_in_yaml_config
@@ -49,6 +51,8 @@ class TestBoaConfig < Minitest::Test
       }
     }
     assert_equal expected, $boa.config
+    assert_equal "localhost", $boa.get("redis.host")
+    assert_equal 6379, $boa.get("redis.port")
   end
 
   def test_load_plugin_foo
@@ -60,5 +64,180 @@ class TestBoaConfig < Minitest::Test
       "foo" => "bar"
     }
     assert_equal expected, $boa.config
+    assert_equal "bar", $boa.get("foo")
+  end
+
+  def test_it_raises_when_no_type_given
+    $boa.set_config_name("config")
+    assert_raises(Boa::BoaConfigError) do
+      $boa.read_in_config
+    end
+  end
+
+  def test_it_raises_when_no_config_file_found
+    $boa.set_config_name("config.fake")
+    assert_raises(Boa::BoaConfigError) do
+      $boa.read_in_config
+    end
+  end
+
+  def test_it_raises_when_no_plugin_for_type
+    $boa.set_config_name("config.unsupported")
+    $boa.add_config_path(File.join(__dir__, "../fixtures"))
+    assert_raises(Boa::BoaPluginError) do
+      $boa.read_in_config
+    end
+  end
+
+  def test_get_value_at_path
+    hash = {
+      "deeply" =>{
+        "nested" => {
+          "redis" => {
+            "host" => "localhost"
+          }
+        }
+      }
+    }
+
+    tmp = {
+      "nested" => {
+        "redis" => {
+          "host" => "localhost"
+        }
+      }
+    }
+    assert_equal tmp, $boa.value_at_path(hash, "deeply")
+    tmp = {
+      "redis" => {
+        "host" => "localhost"
+      }
+    }
+    assert_equal tmp, $boa.value_at_path(hash, "deeply.nested")
+    tmp = {"host" => "localhost"}
+    assert_equal tmp, $boa.value_at_path(hash, "deeply.nested.redis")
+    assert_equal "localhost", $boa.value_at_path(hash, "deeply.nested.redis.host")
+    assert_nil $boa.value_at_path(hash, "not")
+    assert_nil $boa.value_at_path(hash, "deeply.nested.redis.host.not")
+  end
+
+  def test_it_gets
+    config = <<-YAML
+    deeply:
+      nested:
+        redis:
+          host: "localhost"
+    YAML
+    $boa.set_config_type("yaml")
+    $boa.read_config(config)
+    assert_equal "localhost", $boa.get("deeply.nested.redis.host")
+  end
+
+  def test_it_gets_float
+    config = <<-YAML
+    deeply:
+      nested:
+        redis:
+          host: "localhost"
+          floatval: 1.1
+    YAML
+    $boa.set_config_type("yaml")
+    $boa.read_config(config)
+    assert_equal 1.1, $boa.get_float("deeply.nested.redis.floatval")
+    assert_equal 0.0, $boa.get_float("deeply.nested.redis.host")
+  end
+
+  def test_it_gets_int
+    config = <<-YAML
+    deeply:
+      nested:
+        redis:
+          host: "localhost"
+          port: 6379
+    YAML
+    $boa.set_config_type("yaml")
+    $boa.read_config(config)
+    assert_equal 6379, $boa.get_int("deeply.nested.redis.port")
+    assert_equal 0, $boa.get_int("deeply.nested.redis.host")
+  end
+
+  def test_it_gets_int_array
+    config = <<-YAML
+    deeply:
+      nested:
+        redis:
+          host: "localhost"
+          ports:
+          - 6379
+          - 6380
+    YAML
+    $boa.set_config_type("yaml")
+    $boa.read_config(config)
+    assert_equal [6379, 6380], $boa.get_int_array("deeply.nested.redis.ports")
+    assert_raises(Boa::BoaConfigError) do 
+      $boa.get_int_array("deeply.nested.redis.host")
+    end
+  end
+
+  def test_it_gets_string
+    config = <<-YAML
+    deeply:
+      nested:
+        redis:
+          host: "localhost"
+          ports:
+          - 6379
+          - 6380
+    YAML
+    $boa.set_config_type("yaml")
+    $boa.read_config(config)
+    assert_equal "localhost", $boa.get_string("deeply.nested.redis.host")
+  end
+
+  def test_it_gets_string_hash
+    config = <<-YAML
+    deeply:
+      nested:
+        redis:
+          host: "localhost"
+          ports:
+          - 6379
+          - 6380
+    YAML
+    $boa.set_config_type("yaml")
+    $boa.read_config(config)
+    $boa.get_string_hash("deeply").each_key {|k| assert_equal true, k.is_a?(String)}
+  end
+
+  def test_it_gets_string_array
+    config = <<-YAML
+    deeply:
+      nested:
+        redis:
+          host: "localhost"
+          ports:
+          - 6379
+          - 6380
+    YAML
+    $boa.set_config_type("yaml")
+    $boa.read_config(config)
+    $boa.get_string_array("deeply.nested.redis.ports").each {|k| assert_equal true, k.is_a?(String)}
+  end
+
+  def test_set?
+    config = <<-YAML
+    deeply:
+      nested:
+        redis:
+          host: "localhost"
+    YAML
+    $boa.set_config_type("yaml")
+    $boa.read_config(config)
+    assert_equal true, $boa.set?("deeply")
+    assert_equal true, $boa.set?("deeply.nested")
+    assert_equal true, $boa.set?("deeply.nested.redis")
+    assert_equal true, $boa.set?("deeply.nested.redis.host")
+    assert_equal false, $boa.set?("not")
+    assert_equal false, $boa.set?("not.set")
   end
 end

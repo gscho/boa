@@ -4,7 +4,7 @@ module Boa
   module Plugin
     def self.register(type, klass)
       if !klass.is_a?(Class)
-        raise BoaPluginError, "Invalid plugin: '#{type}'. It must be a Class"
+        raise BoaPluginError, "Invalid plugin definition for: '#{type}'. Plugin must be a Class"
       end
       @plugins[type] = klass.new
     end
@@ -15,6 +15,8 @@ module Boa
       @plugins ||= {}
       return @plugins[type] unless @plugins[type].nil?
       Boa::Plugin.search(type)
+      raise BoaPluginError, "Unable to find a plugin for type: '#{type}'" if @plugins[type].nil?
+      
       @plugins[type]
     end
 
@@ -33,6 +35,7 @@ module Boa
       specs = Gem::Specification.find_all do |spec|
         spec.contains_requirable_file? path
       end.sort_by { |spec| spec.version }
+
       spec = specs.last
       if spec
         spec.require_paths.each do |lib|
