@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 require_relative "base"
+require "json"
 
 module Boa
   module Plugin
@@ -7,8 +8,11 @@ module Boa
       Boa::Plugin.register("json", self)
 
       def deserialize(data)
-        require "json"
         JSON.parse data
+      end
+
+      def serialize(config)
+        config.to_json
       end
     end
   end

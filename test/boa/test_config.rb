@@ -119,6 +119,9 @@ class TestBoaConfig < Minitest::Test
     assert_equal "localhost", $boa.value_at_path(hash, "deeply.nested.redis.host")
     assert_nil $boa.value_at_path(hash, "not")
     assert_nil $boa.value_at_path(hash, "deeply.nested.redis.host.not")
+    assert_equal "localhost", $boa.value_at_path(hash, "DEEPLY.NESTED.REDIS.HOST")
+    assert_equal "localhost", $boa.value_at_path(hash, "deeply.NESTED.redis.HOST")
+    assert_equal "localhost", $boa.value_at_path(hash, "dEEplY.NEsTed.reDIS.HoSt")
   end
 
   def test_it_gets
@@ -239,5 +242,60 @@ class TestBoaConfig < Minitest::Test
     assert_equal true, $boa.set?("deeply.nested.redis.host")
     assert_equal false, $boa.set?("not")
     assert_equal false, $boa.set?("not.set")
+  end
+
+  def test_its_binds_env
+    ENV["FOO"] = "bar"
+    $boa.bind_env("MY_VALUE", "FOO")
+    assert_equal "bar", $boa.get("my_value")
+    $boa.bind_env("MY_VALUE", "BAZ", "FOO")
+    assert_equal "bar", $boa.get("my_value")
+    ENV["BOB"] = "vance"
+    $boa.bind_env("MY_VALUE", "BAZ", "BOB", "FOO")
+    assert_equal "vance", $boa.get("my_value")
+  end
+
+  def test_its_sets_env_prefix
+    ENV["SPF_ID"] = "13"
+    $boa.set_env_prefix("spf")
+    $boa.bind_env("id")
+    assert_equal "13", $boa.get("id")
+  end
+
+  def test_it_uses_automatic_env
+    ENV["SPF_ID"] = "13"
+    config = <<-YAML
+    SPF_ID: 12
+    YAML
+    $boa.set_env_prefix("spf")
+    $boa.set_config_type("yaml")
+    $boa.read_config(config)
+    $boa.automatic_env
+    assert_equal "13", $boa.get("id")
+  end
+
+  def test_it_writes_config
+    config = <<-YAML
+    deeply:
+      nested:
+        redis:
+          host: "localhost"
+    YAML
+    $boa.set_config_type("yaml")
+    $boa.read_config(config)
+    assert_raises(Boa::BoaConfigError) do
+      $boa.write_config
+    end
+    $boa.set_config_name("write_config")
+    $boa.add_config_path(File.join(__dir__, "../fixtures"))
+    $boa.set("deeply.nested.redis.host", "http://localhost")
+    $boa.set("deeply.nested.redis.port", 6379)
+    $boa.write_config
+    assert_equal true, File.exist?(File.join(__dir__, "../fixtures", "write_config.yaml"))
+    require "yaml"
+    parsed = YAML.load(File.read(File.join(__dir__, "../fixtures", "write_config.yaml")))
+    assert_equal "http://localhost", parsed["deeply"]["nested"]["redis"]["host"]
+    assert_equal 6379, parsed["deeply"]["nested"]["redis"]["port"]
+    File.delete(File.join(__dir__, "../fixtures", "write_config.yaml"))
   end
 end

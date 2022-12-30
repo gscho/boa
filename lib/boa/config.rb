@@ -9,6 +9,16 @@ module Boa
     def initialize
       @config = {}
       @config_paths = []
+      @env_prefix = ""
+    end
+
+     # Mainly for unit tests
+    def reset!
+      @config = {}
+      @config_paths = []
+      @env_prefix = ""
+      @name = nil
+      @type = nil
     end
     
     def set_default(key, val)
@@ -30,7 +40,7 @@ module Boa
     def read_config(config_string)
       raise BoaConfigError, "Must provide the config type before calling read_config" if @type.empty?
 
-      parse_config(config_string)
+      read_config_from(config_string)
     end
 
     def read_in_config
@@ -42,22 +52,26 @@ module Boa
       raise BoaConfigError, "Unable to locate a config file named: '#{file}' at the provided config paths." if config_dir.nil?
 
       file_path = File.join(config_dir, file)
-      parse_config(File.read(file_path))
+      read_config_from(File.read(file_path))
     end
 
     def get(key)
+      key = @env_prefix + key
+      return ENV.fetch(key.upcase, value_at_path(@config, key)) if @automatic_env
+
       value_at_path(@config, key)
     end
 
     def get_float(key)
-      value_at_path(@config, key).to_f
+      get(key).to_f
     end
 
     def get_int(key)
-      value_at_path(@config, key).to_i
+      get(key).to_i
     end
 
     def get_int_array(key)
+      key = @env_prefix + key
       value = value_at_path(@config, key)
       return value if value.nil?
       raise BoaConfigError, "Value at key: '#{key}' is not an array" unless value.is_a?(Array)
@@ -66,10 +80,11 @@ module Boa
     end
 
     def get_string(key)
-      value_at_path(@config, key).to_s
+      get(key).to_s
     end
 
     def get_string_hash(key)
+      key = @env_prefix + key
       value = value_at_path(@config, key)
       return value if value.nil?
       raise BoaConfigError, "Value at key: '#{key}' is not a hash" unless value.is_a?(Hash)
@@ -85,6 +100,10 @@ module Boa
       value.map(&:to_s)
     end
 
+    def set(key, value)
+      set_value_at_path(@config, key, value)
+    end
+
     def set?(key)
       value = get(key)
       value != nil && !value.empty?
@@ -94,28 +113,96 @@ module Boa
       @config
     end
 
-    # used for unit tests
-    def reset!
-      @config = {}
-      @config_paths = []
-      @name = nil
-      @type = nil
+    def write_config
+      raise BoaConfigError, "No config paths added" if config_paths.empty?
+
+      write_config_as(config_paths.first)
     end
     
+    def safe_write_config
+      raise BoaConfigError, "No config paths added" if config_paths.empty?
+      
+      safe_write_config_as(config_paths.first)
+    end
+
+    def write_config_as(path)
+      @type = File.extname(@name).delete_prefix(".") unless @type
+      raise BoaConfigError, "Must provide an extension in the config name or explicitly set the config type" if @type.empty?
+
+      file = "#{File.basename(@name, ".#{@type}")}.#{@type}"
+      path = File.join(path, file)
+
+      write_config_to(path)
+    end
+
+    def safe_write_config_as(path)
+      raise BoaConfigError, "Config file: '#{path}' already exists" if File.exist?(path)
+
+      write_config_as(path)
+    end
+
+    def set_env_prefix(prefix)
+      @env_prefix = prefix.upcase + "_"
+    end
+
+    def bind_env(key, *names)
+      if names.any?
+        key = key.upcase
+        names.each do |n|
+          value = ENV[n]
+          if value
+            @config[key] = value
+            break
+          end
+        end
+      else
+        key = @env_prefix + key.upcase
+        @config[key] = ENV[key]
+      end
+    end
+
+    def automatic_env
+      @automatic_env = true
+    end
+
     def value_at_path(hash, nested_path)
       path = nested_path.split(".")
-      at_path = hash[path[0]]
+      at_path = hash[path[0].downcase]
+      if at_path.nil?
+        at_path = hash[path[0].upcase]
+      end
       return at_path if path.size == 1 || at_path.nil?
       path.shift
       value_at_path(at_path, path.join("."))
     end
 
+    def set_value_at_path(hash, nested_path, value)
+      path = nested_path.split(".")
+      at_path = hash[path[0].downcase]
+      if at_path.nil?
+        at_path = hash[path[0].upcase]
+      end
+      if path.size == 1
+        hash[path[0]] = value
+        return
+      end
+      path.shift
+      set_value_at_path(at_path, path.join("."), value)
+    rescue NoMethodError
+      raise BoaConfigError, "Unable to modify config at: '#{nested_path}' because parent is nil or not a hash"
+    end
+
     private
 
-    def parse_config(file)
+    def read_config_from(file)
       serde = Boa::Plugin.plugin_for_type(@type)
       parsed = serde.deserialize(file)
       @config.merge! parsed
+    end
+
+    def write_config_to(path)
+      serde = Boa::Plugin.plugin_for_type(@type)
+      File.open(path, "w") { |f| f.write(serde.serialize(@config)) }
     end
   end
 end
