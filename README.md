@@ -4,6 +4,8 @@
 
 Boa is a pluggable ruby implementation of the [Viper](https://github.com/spf13/viper) configuration library for Go.
 
+For examples check out the `examples/` folder.
+
 Natively boa supports:
 
 - JSON
