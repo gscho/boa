@@ -34,6 +34,8 @@ Much like the Golang implementation, boa is meant to be used like a singleton cl
 Many times we need to set defaults for config values which can be done using `set_default`.
 
 ```ruby
+require "boa"
+
 $boa.set_default("foo", "bar")
 $boa.get("foo") #  => "bar"
 ```
@@ -43,6 +45,8 @@ $boa.get("foo") #  => "bar"
 Boa supports reading in configuration files from the local filesystem or directly from a variable.
 
 ```ruby
+require "boa"
+
 # Read a config file from disk at "/etc/my_app/my_config.json" or "./my_config.json" in that order.
 $boa.set_config_name("my_config")
 $boa.set_config_type("json")
@@ -64,6 +68,8 @@ $boa.get("db.user") #  => "postgres"
 Boa can bind configuration values to environment variables and automatically check environment variables before reading configuration from a file.
 
 ```ruby
+require "boa"
+
 # Bind to environment variables using a prefix
 ENV["MY_APP_USER"] = "bob_vance" # Usually done outside the application
 $boa.set_env_prefix("MY_APP")
