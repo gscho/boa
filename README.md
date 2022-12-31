@@ -1,28 +1,92 @@
-# boa-config
+# boa
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/boa`. To experiment with that code, run `bin/console` for an interactive prompt.
+![main workflow](https://github.com/gscho/boa-config/actions/workflows/main.yml/badge.svg)
 
-TODO: Delete this and the text above, and describe your gem
+Boa is a pluggable ruby implementation of the [Viper](https://github.com/spf13/viper) configuration library for Go.
+
+Natively boa supports:
+
+- JSON
+- YAML
+
+Boa also supports these configuration types via plugins:
+
+- TOML
 
 ## Installation
 
 Install the gem and add to the application's Gemfile by executing:
 
-    $ bundle add boa
+    $ bundle add boa-config
 
 If bundler is not being used to manage dependencies, install the gem by executing:
 
-    $ gem install boa
+    $ gem install boa-config
 
 ## Usage
 
-TODO: Write usage instructions here
+Much like the Golang implementation, boa is meant to be used like a singleton class. By default, the boa singleton class is accessible via a global variable named `$boa`.
 
-## Development
+### Setting Defaults
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake test` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+Many times we need to set defaults for config values which can be done using `set_default`.
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+```ruby
+$boa.set_default("foo", "bar")
+$boa.get("foo") #  => "bar"
+```
+
+### Reading Config
+
+Boa supports reading in configuration files from the local filesystem or directly from a variable.
+
+```ruby
+# Read a config file from disk at "/etc/my_app/my_config.json" or "./my_config.json" in that order.
+$boa.set_config_name("my_config")
+$boa.set_config_type("json")
+$boa.add_config_path("/etc/my_app", ".")
+$boa.read_in_config
+
+# Read config from a variab;e
+config = <<-YAML
+db:
+  user: postgres
+  port: 5432
+YAML
+$boa.read_config(config)
+$boa.get("db.user") #  => "postgres"
+```
+
+### Reading Environment Variables
+
+Boa can bind configuration values to environment variables and automatically check environment variables before reading configuration from a file.
+
+```ruby
+# Bind to environment variables using a prefix
+ENV["MY_APP_USER"] = "bob_vance" # Usually done outside the application
+$boa.set_env_prefix("MY_APP")
+$boa.bind_env("USER") # automatically appends the "MY_APP" prefix.
+# lookup is case insensitive
+$boa.get("user") #  => "bob_vance"
+$boa.get("USER") #  => "bob_vance"
+
+# Automatically check environment variables
+ENV["PORT"] = 9292
+config = <<-YAML
+port: 4567
+host: localhost
+YAML
+$boa.read_config(config)
+$boa.automatic_env
+$boa.get("host") #  => "localhost"
+$boa.get("port") #  => 9292
+```
+
+### Writing Config Files
+
+### Adding Plugins
+
+### Writing Plugins
 
 ## Contributing
 
