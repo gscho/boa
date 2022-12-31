@@ -1,18 +1,19 @@
 # frozen_string_literal: true
+
 require "singleton"
 
 module Boa
   class Config
     include Singleton
     attr_reader :config, :config_paths, :name, :type
-    
+
     def initialize
       @config = {}
       @config_paths = []
       @env_prefix = ""
     end
 
-     # Mainly for unit tests
+    # Mainly for unit tests
     def reset!
       @config = {}
       @config_paths = []
@@ -20,7 +21,7 @@ module Boa
       @name = nil
       @type = nil
     end
-    
+
     def set_default(key, val)
       @config[key.to_s] = val
     end
@@ -44,12 +45,18 @@ module Boa
     end
 
     def read_in_config
-      @type = File.extname(@name).delete_prefix(".") unless @type
-      raise BoaConfigError, "Must provide an extension in the config name or explicitly set the config type" if @type.empty?
+      @type ||= File.extname(@name).delete_prefix(".")
+      if @type.empty?
+        raise BoaConfigError,
+              "Must provide an extension in the config name or explicitly set the config type"
+      end
 
       file = "#{File.basename(@name, ".#{@type}")}.#{@type}"
       config_dir = @config_paths.find { |p| File.exist?(File.join(p, file)) }
-      raise BoaConfigError, "Unable to locate a config file named: '#{file}' at the provided config paths." if config_dir.nil?
+      if config_dir.nil?
+        raise BoaConfigError,
+              "Unable to locate a config file named: '#{file}' at the provided config paths."
+      end
 
       file_path = File.join(config_dir, file)
       read_config_from(File.read(file_path))
@@ -106,7 +113,7 @@ module Boa
 
     def set?(key)
       value = get(key)
-      value != nil && !value.empty?
+      !value.nil? && !value.empty?
     end
 
     def all_settings
@@ -118,16 +125,19 @@ module Boa
 
       write_config_as(config_paths.first)
     end
-    
+
     def safe_write_config
       raise BoaConfigError, "No config paths added" if config_paths.empty?
-      
+
       safe_write_config_as(config_paths.first)
     end
 
     def write_config_as(path)
-      @type = File.extname(@name).delete_prefix(".") unless @type
-      raise BoaConfigError, "Must provide an extension in the config name or explicitly set the config type" if @type.empty?
+      @type ||= File.extname(@name).delete_prefix(".")
+      if @type.empty?
+        raise BoaConfigError,
+              "Must provide an extension in the config name or explicitly set the config type"
+      end
 
       file = "#{File.basename(@name, ".#{@type}")}.#{@type}"
       path = File.join(path, file)
@@ -142,14 +152,14 @@ module Boa
     end
 
     def set_env_prefix(prefix)
-      @env_prefix = prefix.upcase + "_"
+      @env_prefix = "#{prefix.upcase}_"
     end
 
     def bind_env(key, *names)
       if names.any?
         key = key.upcase
         names.each do |n|
-          value = ENV[n]
+          value = ENV.fetch(n, nil)
           if value
             @config[key] = value
             break
@@ -157,7 +167,7 @@ module Boa
         end
       else
         key = @env_prefix + key.upcase
-        @config[key] = ENV[key]
+        @config[key] = ENV.fetch(key, nil)
       end
     end
 
@@ -168,10 +178,9 @@ module Boa
     def value_at_path(hash, nested_path)
       path = nested_path.split(".")
       at_path = hash[path[0].downcase]
-      if at_path.nil?
-        at_path = hash[path[0].upcase]
-      end
+      at_path = hash[path[0].upcase] if at_path.nil?
       return at_path if path.size == 1 || at_path.nil?
+
       path.shift
       value_at_path(at_path, path.join("."))
     end
@@ -179,9 +188,7 @@ module Boa
     def set_value_at_path(hash, nested_path, value)
       path = nested_path.split(".")
       at_path = hash[path[0].downcase]
-      if at_path.nil?
-        at_path = hash[path[0].upcase]
-      end
+      at_path = hash[path[0].upcase] if at_path.nil?
       if path.size == 1
         hash[path[0]] = value
         return
@@ -202,7 +209,7 @@ module Boa
 
     def write_config_to(path)
       serde = Boa::Plugin.plugin_for_type(@type)
-      File.open(path, "w") { |f| f.write(serde.serialize(@config)) }
+      File.write(path, serde.serialize(@config))
     end
   end
 end

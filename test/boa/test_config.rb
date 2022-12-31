@@ -3,17 +3,16 @@
 require "test_helper"
 
 class TestBoaConfig < Minitest::Test
-
   def setup
-    $boa.reset!  
+    $boa.reset!
   end
 
   def test_it_has_a_config
-    assert $boa.config != nil
+    assert !$boa.config.nil?
   end
 
   def test_it_has_config_paths
-    assert $boa.config_paths != nil
+    assert !$boa.config_paths.nil?
   end
 
   def test_it_adds_config_paths
@@ -30,7 +29,7 @@ class TestBoaConfig < Minitest::Test
     $boa.read_in_config
     expected = {
       "redis" => {
-        "host" => "localhost", 
+        "host" => "localhost",
         "port" => 6379
       }
     }
@@ -46,7 +45,7 @@ class TestBoaConfig < Minitest::Test
     $boa.read_in_config
     expected = {
       "redis" => {
-        "host" => "localhost", 
+        "host" => "localhost",
         "port" => 6379
       }
     }
@@ -91,7 +90,7 @@ class TestBoaConfig < Minitest::Test
 
   def test_get_value_at_path
     hash = {
-      "deeply" =>{
+      "deeply" => {
         "nested" => {
           "redis" => {
             "host" => "localhost"
@@ -114,13 +113,12 @@ class TestBoaConfig < Minitest::Test
       }
     }
     assert_equal tmp, $boa.value_at_path(hash, "deeply.nested")
-    tmp = {"host" => "localhost"}
+    tmp = { "host" => "localhost" }
     assert_equal tmp, $boa.value_at_path(hash, "deeply.nested.redis")
     assert_equal "localhost", $boa.value_at_path(hash, "deeply.nested.redis.host")
     assert_nil $boa.value_at_path(hash, "not")
     assert_nil $boa.value_at_path(hash, "deeply.nested.redis.host.not")
     assert_equal "localhost", $boa.value_at_path(hash, "DEEPLY.NESTED.REDIS.HOST")
-    assert_equal "localhost", $boa.value_at_path(hash, "deeply.NESTED.redis.HOST")
     assert_equal "localhost", $boa.value_at_path(hash, "dEEplY.NEsTed.reDIS.HoSt")
   end
 
@@ -177,7 +175,7 @@ class TestBoaConfig < Minitest::Test
     $boa.set_config_type("yaml")
     $boa.read_config(config)
     assert_equal [6379, 6380], $boa.get_int_array("deeply.nested.redis.ports")
-    assert_raises(Boa::BoaConfigError) do 
+    assert_raises(Boa::BoaConfigError) do
       $boa.get_int_array("deeply.nested.redis.host")
     end
   end
@@ -209,7 +207,7 @@ class TestBoaConfig < Minitest::Test
     YAML
     $boa.set_config_type("yaml")
     $boa.read_config(config)
-    $boa.get_string_hash("deeply").each_key {|k| assert_equal true, k.is_a?(String)}
+    $boa.get_string_hash("deeply").each_key { |k| assert_equal true, k.is_a?(String) }
   end
 
   def test_it_gets_string_array
@@ -224,7 +222,7 @@ class TestBoaConfig < Minitest::Test
     YAML
     $boa.set_config_type("yaml")
     $boa.read_config(config)
-    $boa.get_string_array("deeply.nested.redis.ports").each {|k| assert_equal true, k.is_a?(String)}
+    $boa.get_string_array("deeply.nested.redis.ports").each { |k| assert_equal true, k.is_a?(String) }
   end
 
   def test_set?
@@ -274,6 +272,7 @@ class TestBoaConfig < Minitest::Test
     assert_equal "13", $boa.get("id")
   end
 
+  # rubocop:disable Metrics/AbcSize
   def test_it_writes_config
     config = <<-YAML
     deeply:
@@ -293,9 +292,10 @@ class TestBoaConfig < Minitest::Test
     $boa.write_config
     assert_equal true, File.exist?(File.join(__dir__, "../fixtures", "write_config.yaml"))
     require "yaml"
-    parsed = YAML.load(File.read(File.join(__dir__, "../fixtures", "write_config.yaml")))
+    parsed = YAML.safe_load(File.read(File.join(__dir__, "../fixtures", "write_config.yaml")))
     assert_equal "http://localhost", parsed["deeply"]["nested"]["redis"]["host"]
     assert_equal 6379, parsed["deeply"]["nested"]["redis"]["port"]
     File.delete(File.join(__dir__, "../fixtures", "write_config.yaml"))
   end
+  # rubocop:enable Metrics/AbcSize
 end

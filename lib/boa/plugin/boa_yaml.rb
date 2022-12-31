@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "base"
 require "yaml"
 
@@ -8,7 +9,7 @@ module Boa
       Boa::Plugin.register("yaml", self)
 
       def deserialize(data)
-        YAML.load data
+        YAML.safe_load data
       end
 
       def serialize(config)

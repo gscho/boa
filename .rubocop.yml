@@ -1,5 +1,10 @@
 AllCops:
   TargetRubyVersion: 2.6
+  NewCops: enable
+  SuggestExtensions: false
+
+Style/Documentation:
+  Enabled: false
 
 Style/StringLiterals:
   Enabled: true
@@ -9,5 +14,20 @@ Style/StringLiteralsInInterpolation:
   Enabled: true
   EnforcedStyle: double_quotes
 
+Style/GlobalVars:
+  Enabled: false
+
 Layout/LineLength:
   Max: 120
+
+Metrics/MethodLength:
+  Max: 30
+
+Metrics/ClassLength:
+  Enabled: false
+
+Naming/AccessorMethodName:
+  Enabled: false
+
+Metrics/PerceivedComplexity:
+  Max: 10
