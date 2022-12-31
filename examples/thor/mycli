@@ -1,0 +1,18 @@
+#!/usr/bin/env ruby
+
+require "boa"
+require "thor"
+
+$boa.set_config_name("my_config.json")
+$boa.add_config_path(".")
+$boa.read_in_config
+
+class MyCLI < Thor
+  desc "ping", "ping a server"
+  option :host, required: true, default: $boa.get("server.host")
+  def ping
+    puts `ping -c 1 #{options[:host]}`
+  end
+end
+
+MyCLI.start(ARGV)
