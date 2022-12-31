@@ -6,3 +6,6 @@
 /pkg/
 /spec/reports/
 /tmp/
+
+/examples/sinatra/Gemfile.lock
+/examples/thor/Gemfile.lock
