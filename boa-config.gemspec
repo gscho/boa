@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "lib/Boa/version"
+require_relative "lib/boa/version"
 
 Gem::Specification.new do |spec|
   spec.name = "boa-config"
