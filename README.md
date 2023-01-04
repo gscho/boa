@@ -2,7 +2,7 @@
 
 ![main workflow](https://github.com/gscho/boa-config/actions/workflows/main.yml/badge.svg)
 
-Boa is a pluggable ruby implementation of the [Viper](https://github.com/spf13/viper) configuration library for Go.
+Boa is a pluggable, zero-dependency, ruby implementation of the [Viper](https://github.com/spf13/viper) configuration library for Go.
 
 For examples check out the `examples/` folder.
 
